@@ -538,6 +538,7 @@ function whoLabel(r){return r==='mod'?'модератора':r==='owner'?'вла
 function whoName(r){return r==='mod'?'модератор':r==='owner'?'владелец':'—'}
 
 /* кнопка в шапке справа вверху создаётся первой */
+if(window.innerWidth <= 600) return;
 var hb=document.createElement('button');hb.className='acbtn';hb.id='acb';hb.setAttribute('aria-label','Аккаунт');
 hb.innerHTML='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти /<br>Регистрация</span>';
 var hright=document.querySelector('header .right');
