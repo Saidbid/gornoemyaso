@@ -808,5 +808,57 @@ function showVis(){
   .acbtn{padding:4px 8px;font-size:11px}
 }
 </style>
+  <script>
+(function(){
+  var OWNER='gornoemyasotop@gmail.com',MODS=['bidzievsaidmah777@gmail.com'];
+  var auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
+  function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
+  function mail(){var u=auth.currentUser;return u?(u.email||'').toLowerCase():''}
+  function isStaff(){var e=mail();return e===OWNER||MODS.indexOf(e)>-1}
+
+  /* записываем зарегистрированного в список (через 2 сек, чтобы успело сохраниться имя) */
+  function ensureUser(){
+    var u=auth.currentUser;if(!u)return;
+    var ref=db.collection('users').doc(u.uid);
+    ref.get().then(function(d){
+      if(!d.exists)return ref.set({name:(u.displayName||'Без имени').slice(0,60),email:u.email,t:TS()});
+    }).catch(function(){});
+  }
+
+  /* вкладка «Зарегистрированные» в панели */
+  function addTab(){
+    if($('tU')||!$('tR'))return;
+    var b=document.createElement('button');
+    b.className='ab';b.id='tU';b.textContent='👥 Зарегистрированные';
+    $('tR').insertAdjacentElement('afterend',b);
+    b.onclick=showUsers;
+    ['tR','tV'].forEach(function(id){var x=$(id);if(x)x.addEventListener('click',function(){b.classList.remove('on')})});
+  }
+  function showUsers(){
+    ['tR','tV'].forEach(function(id){var x=$(id);if(x)x.classList.remove('on')});
+    $('tU').classList.add('on');
+    $('pb').textContent='Загрузка…';
+    db.collection('users').orderBy('t','desc').get().then(function(s){
+      var h='<div class="stats"><div class="stat"><b>'+s.size+'</b>всего зарегистрировано</div></div>'+
+        '<div class="tw"><table class="vt"><tr><th>№</th><th>Имя</th><th>Почта</th><th>Дата регистрации</th></tr>';
+      var i=0;
+      s.forEach(function(d){
+        var x=d.data(),em=(x.email||'').toLowerCase();i++;
+        var tag=em===OWNER?' <span class="tag p">владелец</span>':(MODS.indexOf(em)>-1?' <span class="tag w">модератор</span>':'');
+        h+='<tr><td>'+i+'</td><td>'+esc(x.name)+tag+'</td><td>'+esc(x.email)+'</td><td>'+fmt(x.t)+'</td></tr>';
+      });
+      $('pb').innerHTML=h+'</table></div>';
+    }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
+  }
+
+  auth.onAuthStateChanged(function(u){
+    if(u)setTimeout(ensureUser,2000);
+    if(isStaff()){addTab();if($('tU'))$('tU').style.display=''}
+    else if($('tU'))$('tU').style.display='none';
+  });
+})();
+</script>
 </body>
 </html>
