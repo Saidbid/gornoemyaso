@@ -502,23 +502,6 @@ body.lock{overflow:hidden}
   .ab{padding:10px 12px;font-size:13px}
   .arow{gap:6px}
   .editbar{width:92%;flex-wrap:wrap;justify-content:center}
-}
-@media(max-width:380px){.logo{font-size:13px}.acbtn{padding:4px 8px;font-size:11px}}
-  @media (max-width: 768px) {
-  #acb {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: fixed !important;
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 999999 !important;
-    padding: 8px 12px !important;
-    font-size: 12px !important;
-    min-height: 40px;
-    align-items: center;
-    justify-content: center;
-  }
 
   #acb .lf,
   #acb .ls {
@@ -538,7 +521,6 @@ function whoLabel(r){return r==='mod'?'модератора':r==='owner'?'вла
 function whoName(r){return r==='mod'?'модератор':r==='owner'?'владелец':'—'}
 
 /* кнопка в шапке справа вверху создаётся первой */
-if(window.innerWidth <= 600) return;
 var hb=document.createElement('button');hb.className='acbtn';hb.id='acb';hb.setAttribute('aria-label','Аккаунт');
 hb.innerHTML='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти /<br>Регистрация</span>';
 var hright=document.querySelector('header .right');
