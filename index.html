@@ -626,12 +626,21 @@ $('lcl').onclick=function(){login.classList.remove('on')};
 function authErr(e){
   var c=e.code||'';
   $('lerr').style.color='#ff6b6b';
-  $('lerr').textContent=
-    c==='auth/email-already-in-use'?'Эта почта уже зарегистрирована, нажмите «Вход»':
-    c==='auth/weak-password'?'Пароль слишком короткий (минимум 6 символов)':
-    c==='auth/invalid-email'?'Неверный адрес почты':
-    c==='auth/too-many-requests'?'Слишком много попыток, попробуйте позже':
-    mode==='up'?('Не удалось зарегистрироваться: '+(e.message||c)):'Неверная почта или пароль';
+  var m={
+    .auth/email-already-in-use':'Эта почта уже зарегистрирована, нажмите «Вход»',
+    .auth/weak-password':'Пароль слишком короткий (минимум 6 символов)',
+    .auth/invalid-email':'Неверный адрес почты',
+    .auth/too-many-requests':'Слишком много попыток, попробуйте позже',
+    .auth/network-request-failed':'Нет связи с сервером. Проверьте интернет, отключите VPN',
+    .auth/operation-not-allowed':'Вход по почте выключен в Firebase (Authentication → Sign-in method → Email/Password)',
+    .auth/admin-restricted-operation':'Регистрация новых пользователей выключена в Firebase (Authentication → Settings → User actions)',
+    .auth/unauthorized-domain':'Домен сайта не добавлен в Firebase (Authentication → Settings → Authorized domains)',
+    .auth/invalid-credential':'Неверная почта или пароль',
+    .auth/user-not-found':'Такой почты нет, нажмите «Регистрация»',
+    .auth/wrong-password':'Неверный пароль'
+  };
+  $('lerr').textContent=(m[c]||'Ошибка: '+c+' '+(e.message||''));
+}
 }
 function afterLogin(){
   login.classList.remove('on');$('lpw').value='';
