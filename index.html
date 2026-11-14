@@ -455,17 +455,19 @@ body.lock{overflow:hidden}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-.lockbtn{position:fixed;left:10px;bottom:10px;z-index:56;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.5);color:#fff;cursor:pointer;opacity:.4}
-.lockbtn:hover{opacity:1}
+.lockbtn{position:fixed;left:10px;bottom:10px;z-index:56;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.55);color:#fff;cursor:pointer;opacity:.5;font-size:18px}
+.lockbtn:hover,.lockbtn.has{opacity:1}
+.bdg{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e01b1b;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(224,27,27,.9)}
 .ov{position:fixed;inset:0;z-index:100;background:rgba(5,5,8,.94);backdrop-filter:blur(10px);overflow:auto;display:none;padding:20px}
 .ov.on{display:block}
 .box{max-width:960px;margin:20px auto;background:#13131a;border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:24px;color:#fff}
-.box.sm{max-width:380px;margin-top:12vh}
+.box.sm{max-width:380px;margin-top:10vh}
 .box h3{font-size:22px;margin-bottom:14px}
 .arow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .ab{border:0;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:#2a2a36;font-family:inherit}
 .ab.red,.ab.on{background:#e01b1b}.ab.grn{background:#1f9d3f}
 .rv{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;margin-bottom:12px}
+.rv.pend{border-color:#d9a400;box-shadow:inset 0 0 0 1px #d9a400}
 .rv small{color:#a0a0ab;display:block;margin-bottom:8px}
 .box input,.box textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #333;background:#0c0c11;color:#fff;font-family:inherit;font-size:15px;margin-bottom:8px}
 .box textarea.rpl{border-color:#e01b1b}
@@ -480,6 +482,7 @@ body.lock{overflow:hidden}
 .editbar.on{display:flex}
 .editing [data-ed]{outline:2px dashed #e01b1b;outline-offset:3px;cursor:text}
 .rmsg{color:#7dff9a;margin-top:8px}
+.rnote{text-align:center;color:#a0a0ab;margin-bottom:12px;line-height:1.6}
 .r .reply{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(224,27,27,.1);border-left:3px solid #e01b1b}
 .r .reply b{color:#ff5a5a;font-size:14px}
 .r .reply p{margin-top:4px}
@@ -503,22 +506,18 @@ function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-dig
 function fail(e){alert('Ошибка: '+(e.code||'')+' — '+e.message)}
 var vid=localStorage.getItem('vid');
 if(!vid){vid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('vid',vid)}
+var role=null,flt='p';
 
 /* 1. Учёт заходов */
 if(!sessionStorage.getItem('counted')){
   sessionStorage.setItem('counted','1');
-  var u=navigator.userAgent;
-  var dev=(/Mobi|Android|iPhone/i.test(u)?'📱 телефон':'💻 компьютер')+', '+(/Edg/.test(u)?'Edge':/OPR/.test(u)?'Opera':/YaBrowser/.test(u)?'Яндекс':/Chrome/.test(u)?'Chrome':/Firefox/.test(u)?'Firefox':/Safari/.test(u)?'Safari':'другой');
+  var u0=navigator.userAgent;
+  var dev=(/Mobi|Android|iPhone/i.test(u0)?'📱 телефон':'💻 компьютер')+', '+(/Edg/.test(u0)?'Edge':/OPR/.test(u0)?'Opera':/YaBrowser/.test(u0)?'Яндекс':/Chrome/.test(u0)?'Chrome':/Firefox/.test(u0)?'Firefox':/Safari/.test(u0)?'Safari':'другой');
   var src='прямой заход';try{if(document.referrer)src=new URL(document.referrer).hostname}catch(e){}
   db.collection('visits').add({t:TS(),vid:vid,device:dev,src:src}).catch(function(){});
 }
 
-/* 2. Публичные отзывы (с ответами владельца) */
-if($('rn')&&!$('rc')){
-  var rc=document.createElement('input');rc.id='rc';rc.maxLength=60;
-  rc.placeholder='Телефон или @ник (необязательно, видит только владелец)';
-  $('rn').insertAdjacentElement('afterend',rc);
-}
+/* 2. Публичные отзывы */
 function loadPub(){
   db.collection('reviews').where('approved','==',true).get().then(function(s){
     var a=[];s.forEach(function(d){a.push(d.data())});
@@ -530,14 +529,22 @@ function loadPub(){
   }).catch(function(){});
 }
 loadPub();
+
+var rform=$('rn')&&$('rn').form;
+var note=document.createElement('div');note.className='rnote';
+note.innerHTML='Чтобы оставить отзыв, войдите или зарегистрируйтесь<br><br><button class="btn" type="button" id="rnb">👤 Войти / Регистрация</button>';
+if(rform)rform.parentNode.insertBefore(note,rform);
+$('rnb').onclick=function(){openAuth('in')};
+
 window.addReview=function(e){
-  e.preventDefault();var f=e.target;
-  db.collection('reviews').add({name:$('rn').value.trim().slice(0,60),contact:($('rc').value||'').trim().slice(0,60),text:$('rt').value.trim().slice(0,800),approved:false,vid:vid,t:TS()})
-  .then(function(){f.reset();var m=document.createElement('div');m.className='rmsg';m.textContent='Спасибо! Отзыв появится на сайте после проверки.';f.appendChild(m);setTimeout(function(){m.remove()},6000)})
+  e.preventDefault();var f=e.target,u=auth.currentUser;
+  if(!u){openAuth('up');return}
+  db.collection('reviews').add({name:(u.displayName||'Покупатель').slice(0,60),text:$('rt').value.trim().slice(0,800),approved:false,vid:vid,uid:u.uid,t:TS()})
+  .then(function(){f.reset();updateUI();var m=document.createElement('div');m.className='rmsg';m.textContent='Спасибо! Отзыв появится на сайте после проверки.';f.appendChild(m);setTimeout(function(){m.remove()},6000)})
   .catch(function(){alert('Не удалось отправить, попробуйте позже')});
 };
 
-/* 3. Редактируемые тексты */
+/* 3. Редактируемые тексты (только владелец) */
 var SEL=[['sub','.sub'],['hp','.hero p'],['hal','.halal p, #halal p'],['fp','.feat p'],['ch','.card h3'],['chip','.chips span'],['cc','.cc b'],['bd','.badge']],eds=[];
 SEL.forEach(function(s){document.querySelectorAll(s[1]).forEach(function(el,i){if(el.children.length)return;el.setAttribute('data-ed',s[0]+i);el._o=el.textContent;eds.push(el)})});
 db.collection('content').doc('texts').get().then(function(d){
@@ -558,49 +565,153 @@ $('svT').onclick=function(){
 };
 $('cnT').onclick=function(){location.reload()};
 
-/* 4. Вход и панель владельца */
-var lb=document.createElement('button');lb.className='lockbtn';lb.textContent='🔒';lb.setAttribute('aria-label','Вход для владельца');document.body.appendChild(lb);
+/* 4. Аккаунты: вход и регистрация */
+var lb=document.createElement('button');lb.className='lockbtn';lb.textContent='👤';lb.setAttribute('aria-label','Аккаунт');document.body.appendChild(lb);
+
 var login=document.createElement('div');login.className='ov';
-login.innerHTML='<div class="box sm"><h3>🔒 Вход для владельца</h3><input id="lem" type="email" placeholder="Почта"><input id="lpw" type="password" placeholder="Пароль"><div class="arow"><button class="ab red" id="lgo">Войти</button><button class="ab" id="lcl">Закрыть</button></div><div id="lerr" style="color:#ff6b6b"></div></div>';
+login.innerHTML='<div class="box sm"><h3 id="atl">Вход</h3>'+
+ '<div class="arow"><button class="ab on" id="mIn">Вход</button><button class="ab" id="mUp">Регистрация</button></div>'+
+ '<input id="anm2" placeholder="Ваше имя" maxlength="40" style="display:none">'+
+ '<input id="lem" type="email" placeholder="Почта"><input id="lpw" type="password" placeholder="Пароль (минимум 6 символов)">'+
+ '<div class="arow"><button class="ab red" id="lgo">Войти</button><button class="ab" id="lcl">Закрыть</button></div>'+
+ '<button class="ab" id="lfp" type="button" style="font-weight:400;font-size:13px">Забыли пароль?</button>'+
+ '<div id="lerr" style="color:#ff6b6b;margin-top:10px"></div></div>';
 document.body.appendChild(login);
+
+var acc=document.createElement('div');acc.className='ov';
+acc.innerHTML='<div class="box sm"><h3>👤 Ваш аккаунт</h3><p id="accn" style="margin-bottom:14px;line-height:1.6"></p><div class="arow"><button class="ab" id="accx">Выйти</button><button class="ab" id="accc">Закрыть</button></div></div>';
+document.body.appendChild(acc);
+
 var panel=document.createElement('div');panel.className='ov';
-panel.innerHTML='<div class="box"><h3>⚙️ Панель владельца</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tV">Посетители</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
+panel.innerHTML='<div class="box"><h3>⚙️ Панель</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tV">Посетители</button><button class="ab" id="tM">🛡 Модераторы</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
 document.body.appendChild(panel);
 
-function isOwner(){return auth.currentUser&&auth.currentUser.email===OWNER_EMAIL}
-lb.onclick=function(){isOwner()?openPanel():login.classList.add('on')};
+var mode='in';
+function setMode(m){
+  mode=m;
+  $('mIn').classList.toggle('on',m==='in');$('mUp').classList.toggle('on',m==='up');
+  $('anm2').style.display=m==='up'?'':'none';
+  $('atl').textContent=m==='up'?'Регистрация':'Вход';
+  $('lgo').textContent=m==='up'?'Зарегистрироваться':'Войти';
+  $('lerr').textContent='';
+}
+function openAuth(m){setMode(m||'in');login.classList.add('on')}
+$('mIn').onclick=function(){setMode('in')};
+$('mUp').onclick=function(){setMode('up')};
 $('lcl').onclick=function(){login.classList.remove('on')};
+function authErr(e){
+  var c=e.code||'';
+  $('lerr').textContent=
+    c==='auth/email-already-in-use'?'Эта почта уже зарегистрирована, нажмите «Вход»':
+    c==='auth/weak-password'?'Пароль слишком короткий (минимум 6 символов)':
+    c==='auth/invalid-email'?'Неверный адрес почты':
+    c==='auth/too-many-requests'?'Слишком много попыток, попробуйте позже':
+    mode==='up'?('Не удалось зарегистрироваться: '+(e.message||c)):'Неверная почта или пароль';
+}
+function afterLogin(){
+  login.classList.remove('on');$('lpw').value='';
+  applyUser(function(){if(role==='owner'||role==='mod')openPanel()});
+}
 $('lgo').onclick=function(){
   $('lerr').textContent='';
-  auth.signInWithEmailAndPassword($('lem').value,$('lpw').value).then(function(){login.classList.remove('on');$('lpw').value='';openPanel()}).catch(function(){$('lerr').textContent='Неверная почта или пароль'});
+  var em=$('lem').value.trim(),pw=$('lpw').value;
+  if(mode==='up'){
+    var nm=$('anm2').value.trim();
+    if(!nm){$('lerr').textContent='Введите имя';return}
+    auth.createUserWithEmailAndPassword(em,pw)
+      .then(function(c){return c.user.updateProfile({displayName:nm.slice(0,40)})})
+      .then(afterLogin).catch(authErr);
+  }else{
+    auth.signInWithEmailAndPassword(em,pw).then(afterLogin).catch(authErr);
+  }
 };
+$('lfp').onclick=function(){
+  var em=$('lem').value.trim();
+  if(!em){$('lerr').textContent='Впишите почту и нажмите «Забыли пароль?»';return}
+  auth.sendPasswordResetEmail(em).then(function(){$('lerr').style.color='#7dff9a';$('lerr').textContent='Письмо для смены пароля отправлено';setTimeout(function(){$('lerr').style.color='#ff6b6b'},4000)}).catch(authErr);
+};
+
+/* роль и интерфейс */
+function setBadge(n){lb.innerHTML='👤'+(n?'<span class="bdg">'+n+'</span>':'');lb.classList.toggle('has',n>0)}
+function countPending(){
+  if(role!=='owner'&&role!=='mod'){setBadge(0);return}
+  db.collection('reviews').where('approved','==',false).get().then(function(s){setBadge(s.size)}).catch(function(){});
+}
+function updateUI(){
+  var u=auth.currentUser,own=role==='owner';
+  ['tV','tM','tT'].forEach(function(id){$(id).style.display=own?'':'none'});
+  if(rform){
+    rform.style.display=u?'':'none';
+    note.style.display=u?'none':'';
+    if(u&&$('rn')){$('rn').value=u.displayName||'Покупатель';$('rn').readOnly=true}
+  }
+  countPending();
+}
+function applyUser(cb){
+  var u=auth.currentUser;role=null;
+  if(!u){updateUI();if(cb)cb();return}
+  var em=(u.email||'').toLowerCase();
+  if(em===OWNER_EMAIL){role='owner';updateUI();if(cb)cb();return}
+  role='user';
+  db.collection('staff').doc(em).get().then(function(d){if(d.exists)role='mod'}).catch(function(){}).then(function(){updateUI();if(cb)cb()});
+}
+auth.onAuthStateChanged(function(){applyUser()});
+setInterval(countPending,120000);
+
+lb.onclick=function(){
+  var u=auth.currentUser;
+  if(!u){openAuth('in');return}
+  if(role==='owner'||role==='mod')openPanel();
+  else{$('accn').textContent=(u.displayName||'Покупатель')+' ('+u.email+')';acc.classList.add('on')}
+};
+$('accc').onclick=function(){acc.classList.remove('on')};
+$('accx').onclick=function(){auth.signOut();acc.classList.remove('on')};
 $('tC').onclick=function(){panel.classList.remove('on')};
 $('tX').onclick=function(){auth.signOut();panel.classList.remove('on')};
 $('tT').onclick=function(){panel.classList.remove('on');setEdit(true)};
 $('tR').onclick=function(){tab('R')};
 $('tV').onclick=function(){tab('V')};
-function tab(t){$('tR').classList.toggle('on',t==='R');$('tV').classList.toggle('on',t==='V');t==='R'?showRev():showVis()}
-function openPanel(){panel.classList.add('on');tab('R')}
+$('tM').onclick=function(){tab('M')};
+function tab(t){
+  ['R','V','M'].forEach(function(k){$('t'+k).classList.toggle('on',k===t)});
+  t==='R'?showRev():t==='V'?showVis():showMods();
+}
+function openPanel(){flt='p';panel.classList.add('on');tab('R')}
 
+/* 5. Отзывы в панели */
 function showRev(){
   $('pb').textContent='Загрузка…';
-  Promise.all([db.collection('visits').orderBy('t','desc').limit(1000).get(),db.collection('reviews').orderBy('t','desc').get()]).then(function(r){
-    var vc={};r[0].forEach(function(d){var v=d.data().vid;vc[v]=(vc[v]||0)+1});
-    var h='<div class="rv"><b>➕ Добавить отзыв вручную</b><input id="anm" placeholder="Имя"><textarea id="atx" rows="2" placeholder="Текст отзыва"></textarea><button class="ab grn" id="aad">Добавить и опубликовать</button></div>';
-    r[1].forEach(function(d){
-      var x=d.data();
-      h+='<div class="rv" data-id="'+d.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small>'
-      +'<textarea class="txt" rows="3">'+esc(x.text)+'</textarea>'
-      +'<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(x.reply||'')+'</textarea>'
+  var own=role==='owner';
+  Promise.all([
+    own?db.collection('visits').orderBy('t','desc').limit(1000).get():Promise.resolve(null),
+    db.collection('reviews').orderBy('t','desc').get()
+  ]).then(function(r){
+    var vc={};if(r[0])r[0].forEach(function(d){var v=d.data().vid;vc[v]=(vc[v]||0)+1});
+    var list=[];r[1].forEach(function(d){list.push({id:d.id,x:d.data()})});
+    var np=list.filter(function(i){return !i.x.approved}).length;
+    setBadge(np);
+    var h='<div class="arow">'+
+      '<button class="ab '+(flt==='p'?'on':'')+'" data-f="p">⏳ Ждут проверки ('+np+')</button>'+
+      '<button class="ab '+(flt==='a'?'on':'')+'" data-f="a">Опубликованные ('+(list.length-np)+')</button>'+
+      '<button class="ab '+(flt==='all'?'on':'')+'" data-f="all">Все ('+list.length+')</button></div>';
+    if(own)h+='<div class="rv"><b>➕ Добавить отзыв вручную</b><input id="anm" placeholder="Имя"><textarea id="atx" rows="2" placeholder="Текст отзыва"></textarea><button class="ab grn" id="aad">Добавить и опубликовать</button></div>';
+    var shown=list.filter(function(i){return flt==='all'||(flt==='p'?!i.x.approved:!!i.x.approved)});
+    if(!shown.length)h+='<p style="color:#a0a0ab;padding:10px 0">Здесь пока пусто</p>';
+    shown.forEach(function(i){
+      var x=i.x;
+      h+='<div class="rv'+(x.approved?'':' pend')+'" data-id="'+i.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small>'
+      +'<textarea class="txt" rows="3"'+(own?'':' readonly')+'>'+esc(x.text)+'</textarea>'
+      +(own?'<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(x.reply||'')+'</textarea>':(x.reply?'<small>💬 Ответ владельца: '+esc(x.reply)+'</small>':''))
       +'<div class="arow">'
-      +'<button class="ab grn" data-a="reply">'+(x.reply?'Обновить ответ':'💬 Ответить')+'</button>'
-      +(x.reply?'<button class="ab" data-a="delreply">Убрать ответ</button>':'')
+      +(own?'<button class="ab grn" data-a="reply">'+(x.reply?'Обновить ответ':'💬 Ответить')+'</button>':'')
+      +(own&&x.reply?'<button class="ab" data-a="delreply">Убрать ответ</button>':'')
       +'<button class="ab '+(x.approved?'':'grn')+'" data-a="pub">'+(x.approved?'Скрыть':'Опубликовать')+'</button>'
-      +'<button class="ab" data-a="save">Сохранить текст</button>'
+      +(own?'<button class="ab" data-a="save">Сохранить текст</button>':'')
       +'<button class="ab red" data-a="del">Удалить</button></div></div>';
     });
     $('pb').innerHTML=h;
-    $('aad').onclick=function(){
+    $('pb').querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(){flt=b.getAttribute('data-f');showRev()}});
+    if(own)$('aad').onclick=function(){
       if(!$('atx').value.trim())return;
       db.collection('reviews').add({name:$('anm').value.trim()||'Покупатель',text:$('atx').value.trim(),approved:true,t:TS()}).then(function(){showRev();loadPub()}).catch(fail);
     };
@@ -623,6 +734,8 @@ function showRev(){
     });
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
+
+/* 6. Посетители (владелец) */
 function showVis(){
   $('pb').textContent='Загрузка…';
   db.collection('visits').orderBy('t','desc').limit(1000).get().then(function(s){
@@ -633,6 +746,29 @@ function showVis(){
     h+='<div class="tw"><table class="vt"><tr><th>Время</th><th>Посетитель</th><th>Устройство</th><th>Откуда</th></tr>';
     a.slice(0,100).forEach(function(v){h+='<tr><td>'+fmt(v.t)+'</td><td>#'+esc((v.vid||'').slice(0,6))+'</td><td>'+esc(v.device)+'</td><td>'+esc(v.src)+'</td></tr>'});
     $('pb').innerHTML=h+'</table></div>';
+  }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
+}
+
+/* 7. Модераторы (владелец) */
+function showMods(){
+  $('pb').textContent='Загрузка…';
+  db.collection('staff').get().then(function(s){
+    var h='<div class="rv"><b>🛡 Назначить модератора</b><input id="mem" type="email" placeholder="Почта модератора (он должен зарегистрироваться на сайте с этой почтой)"><button class="ab grn" id="mad">Назначить</button></div>';
+    var n=0;
+    s.forEach(function(d){n++;h+='<div class="rv"><b>'+esc(d.id)+'</b><span class="tag p">модератор</span><div class="arow" style="margin:10px 0 0"><button class="ab red" data-m="'+esc(d.id)+'">Снять</button></div></div>'});
+    if(!n)h+='<p style="color:#a0a0ab">Модераторов пока нет</p>';
+    $('pb').innerHTML=h;
+    $('mad').onclick=function(){
+      var em=$('mem').value.trim().toLowerCase();
+      if(!em)return;
+      db.collection('staff').doc(em).set({role:'moderator',t:TS()}).then(showMods).catch(fail);
+    };
+    $('pb').querySelectorAll('[data-m]').forEach(function(b){
+      b.onclick=function(){
+        if(confirm('Снять модератора '+b.getAttribute('data-m')+'?'))
+          db.collection('staff').doc(b.getAttribute('data-m')).delete().then(showMods).catch(fail);
+      };
+    });
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
 })();
