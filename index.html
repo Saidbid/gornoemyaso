@@ -586,6 +586,32 @@ function loadPub(){
 loadPub();
 
 var rform=$('rn')&&$('rn').form;
+
+window.addReview=function(e){
+  e.preventDefault();
+
+  var name=$('rn').value.trim();
+  var message=$('rt').value.trim();
+
+  if(!name || !message){
+    alert('Заполните имя и текст отзыва');
+    return;
+  }
+
+  db.collection('reviews').add({
+    name:name.slice(0,60),
+    text:message.slice(0,800),
+    approved:false,
+    vid:vid,
+    t:TS()
+  }).then(function(){
+    rform.reset();
+    alert('Спасибо! Отзыв отправлен на проверку.');
+  }).catch(function(e){
+    console.error(e);
+    alert('Не удалось отправить отзыв. Проверьте подключение.');
+  });
+};
 var note=document.createElement('div');note.className='rnote';
 note.innerHTML='Чтобы оставить отзыв, войдите или зарегистрируйтесь<br><br><button class="btn" type="button" id="rnb">👤 Войти / Регистрация</button>';
 if(rform)rform.parentNode.insertBefore(note,rform);
