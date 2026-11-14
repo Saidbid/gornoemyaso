@@ -677,10 +677,23 @@ function ensureUser(){
   }).catch(function(e){console.error('users:',e.code,e.message)});
 }
 
+
 function afterLogin(){
-  login.classList.remove('on');$('lpw').value='';
+  login.classList.remove('on');
+  $('lpw').value='';
   applyUser();
-  if(role==='owner'||role==='mod')openPanel();
+
+  if(role==='owner'||role==='mod'){
+    openPanel();
+  }else{
+    var u=auth.currentUser;
+    if(u){
+      $('accn').textContent=(u.displayName||'Покупатель')+' ('+u.email+')';
+      acc.classList.add('on');
+    }
+  }
+}
+
 }
 $('lgo').onclick=function(){
   $('lerr').textContent='';
