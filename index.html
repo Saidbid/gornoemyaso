@@ -869,5 +869,40 @@ function showVis(){
   });
 })();
 </script>
+  <style>
+.fixlogin{position:fixed;top:86px;right:20px;z-index:70;height:46px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:#e01b1b;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 22px rgba(224,27,27,.6)}
+@media(max-width:900px){.fixlogin{top:auto;right:auto;left:14px;bottom:16px;font-size:13px;padding:0 14px}}
+</style>
+<script>
+(function(){
+  var OWNER='gornoemyasotop@gmail.com',MODS=['bidzievsaidmah777@gmail.com'];
+  function visible(el){
+    if(!el)return false;
+    var r=el.getBoundingClientRect();
+    return r.width>0&&r.height>0&&r.right<=innerWidth+1&&r.left>=0;
+  }
+  setTimeout(function(){
+    if(visible(document.getElementById('acb')))return;
+    var b=document.createElement('button');
+    b.className='fixlogin';
+    b.textContent='👤 Войти / Регистрация';
+    b.onclick=function(){
+      var a=document.getElementById('acb');
+      if(a){a.click();return}
+      var l=document.getElementById('lem');
+      if(l&&l.closest('.ov')){l.closest('.ov').classList.add('on');return}
+      alert('Основной код входа не загрузился. Нажмите F12, откройте вкладку Console и пришлите красную строку.');
+    };
+    document.body.appendChild(b);
+    try{
+      firebase.auth().onAuthStateChanged(function(u){
+        if(!u){b.textContent='👤 Войти / Регистрация';return}
+        var e=(u.email||'').toLowerCase();
+        b.textContent=(e===OWNER||MODS.indexOf(e)>-1)?'⚙️ Панель':'👤 '+(u.displayName||'Аккаунт').slice(0,12);
+      });
+    }catch(e){}
+  },1500);
+})();
+</script>
 </body>
 </html>
