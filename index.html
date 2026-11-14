@@ -451,15 +451,14 @@ body.lock{overflow:hidden}
   f.appendChild(d);
 })();
 </script>
- <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-.acbtn{position:relative;height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.25s}
-.acbtn:hover{background:#e01b1b;border-color:#e01b1b}
+.acbtn{position:relative;height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:#e01b1b;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.25s;line-height:1.15;flex-shrink:0;box-shadow:0 0 18px rgba(224,27,27,.5)}
+.acbtn:hover{transform:scale(1.04)}
 .acbtn .ls{display:none}
-@media(max-width:900px){.acbtn{padding:0 12px;font-size:13px}.acbtn .lf{display:none}.acbtn .ls{display:inline}}
-.bdg{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e01b1b;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(224,27,27,.9)}
+.bdg{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#fff;color:#e01b1b;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ov{position:fixed;inset:0;z-index:100;background:rgba(5,5,8,.94);backdrop-filter:blur(10px);overflow:auto;display:none;padding:20px}
 .ov.on{display:block}
 .box{max-width:960px;margin:20px auto;background:#13131a;border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:24px;color:#fff}
@@ -471,7 +470,7 @@ body.lock{overflow:hidden}
 .rv{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;margin-bottom:12px}
 .rv.pend{border-color:#d9a400;box-shadow:inset 0 0 0 1px #d9a400}
 .rv small{color:#a0a0ab;display:block;margin-bottom:8px}
-.box input,.box textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #333;background:#0c0c11;color:#fff;font-family:inherit;font-size:15px;margin-bottom:8px}
+.box input,.box textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #333;background:#0c0c11;color:#fff;font-family:inherit;font-size:16px;margin-bottom:8px}
 .box textarea.rpl{border-color:#e01b1b}
 .tag{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:6px}
 .tag.w{background:#8a5a00}.tag.p{background:#1f9d3f}
@@ -488,11 +487,47 @@ body.lock{overflow:hidden}
 .r .reply{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(224,27,27,.1);border-left:3px solid #e01b1b}
 .r .reply b{color:#ff5a5a;font-size:14px}
 .r .reply p{margin-top:4px}
+@media(max-width:900px){
+  header{gap:8px}
+  .acbtn{height:44px;padding:4px 10px;font-size:12px;text-align:center}
+  .acbtn .lf{display:none}
+  .acbtn .ls{display:inline-block}
+  .right{gap:8px}
+  .cart{width:40px;height:40px;font-size:18px}
+  .burger{width:40px;height:40px}
+  .ov{padding:10px}
+  .box{padding:16px;margin:10px auto;border-radius:18px}
+  .box.sm{margin-top:6vh}
+  .box h3{font-size:19px}
+  .ab{padding:10px 12px;font-size:13px}
+  .arow{gap:6px}
+  .editbar{width:92%;flex-wrap:wrap;justify-content:center}
+}
+@media(max-width:380px){.logo{font-size:13px}.acbtn{padding:4px 8px;font-size:11px}}
 </style>
 <script>
 (function(){
 var OWNER_EMAIL='gornoemyasotop@gmail.com';
 var MODS=['bidzievsaidmah777@gmail.com'];
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
+function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
+function fail(e){alert('Ошибка: '+(e.code||'')+' — '+e.message)}
+function whoLabel(r){return r==='mod'?'модератора':r==='owner'?'владельца':'магазина'}
+function whoName(r){return r==='mod'?'модератор':r==='owner'?'владелец':'—'}
+
+/* кнопка в шапке справа вверху создаётся первой */
+var hb=document.createElement('button');hb.className='acbtn';hb.id='acb';hb.setAttribute('aria-label','Аккаунт');
+hb.innerHTML='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти /<br>Регистрация</span>';
+var hright=document.querySelector('header .right');
+if(hright)hright.insertBefore(hb,hright.firstChild);
+else{hb.style.cssText+=';position:fixed;top:14px;right:14px;z-index:60';document.body.appendChild(hb)}
+
+if(typeof firebase==='undefined'){
+  hb.onclick=function(){alert('Не загрузилась библиотека Firebase. Отключите VPN или блокировщик рекламы и обновите страницу.')};
+  return;
+}
+
 var firebaseConfig={
   apiKey:"AIzaSyDKrW8Ci0SfwshTSgolWZnhSQWsuBcP_68",
   authDomain:"gornoemyaso.firebaseapp.com",
@@ -502,13 +537,7 @@ var firebaseConfig={
   appId:"1:356939305134:web:0c0a6e586c1ee1030b1d3f"
 };
 firebase.initializeApp(firebaseConfig);
-var db=firebase.firestore(),auth=firebase.auth(),TS=firebase.firestore.FieldValue.serverTimestamp;
-function $(id){return document.getElementById(id)}
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
-function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
-function fail(e){alert('Ошибка: '+(e.code||'')+' — '+e.message)}
-function whoLabel(r){return r==='mod'?'модератора':r==='owner'?'владельца':'магазина'}
-function whoName(r){return r==='mod'?'модератор':r==='owner'?'владелец':'—'}
+var db=firebase.firestore(),auth=firebase.auth(),TS=firebase.firestore.FieldValue.serverTimestamp,DEL=firebase.firestore.FieldValue.delete;
 var vid=localStorage.getItem('vid');
 if(!vid){vid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('vid',vid)}
 var role=null,flt='p',pend=0;
@@ -565,24 +594,20 @@ function setEdit(on){
 }
 $('svT').onclick=function(){
   var m={};
-  eds.forEach(function(el){var t=el.textContent.trim();m[el.getAttribute('data-ed')]=(t!==el._o)?t:firebase.firestore.FieldValue.delete()});
+  eds.forEach(function(el){var t=el.textContent.trim();m[el.getAttribute('data-ed')]=(t!==el._o)?t:DEL()});
   db.collection('content').doc('texts').set(m,{merge:true}).then(function(){setEdit(false);alert('Тексты сохранены')}).catch(fail);
 };
 $('cnT').onclick=function(){location.reload()};
 
-/* 4. Кнопка аккаунта в шапке справа вверху */
-var hb=document.createElement('button');hb.className='acbtn';hb.id='acb';hb.setAttribute('aria-label','Аккаунт');
-var hright=document.querySelector('header .right');
-if(hright)hright.insertBefore(hb,hright.firstChild);else{hb.style.cssText='position:fixed;top:14px;right:14px;z-index:60';document.body.appendChild(hb)}
+/* 4. Окна: вход/регистрация, аккаунт, панель */
 function renderHB(){
   var u=auth.currentUser,staff=role==='owner'||role==='mod',t;
-  if(!u)t='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти</span>';
+  if(!u)t='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти /<br>Регистрация</span>';
   else if(staff)t='⚙️ Панель';
   else t='👤 '+esc((u.displayName||'Аккаунт').slice(0,12));
   hb.innerHTML=t+(pend&&staff?'<span class="bdg">'+pend+'</span>':'');
 }
 function setBadge(n){pend=n;renderHB()}
-renderHB();
 
 var mm=document.querySelector('.mmenu');
 if(mm){
@@ -591,7 +616,6 @@ if(mm){
   mm.insertBefore(ma,mm.querySelector('small'));
 }
 
-/* окна: вход/регистрация, аккаунт, панель */
 var login=document.createElement('div');login.className='ov';
 login.innerHTML='<div class="box sm"><h3 id="atl">Вход</h3>'+
  '<div class="arow"><button class="ab on" id="mIn">Вход</button><button class="ab" id="mUp">Регистрация</button></div>'+
@@ -607,7 +631,7 @@ acc.innerHTML='<div class="box sm"><h3>👤 Ваш аккаунт</h3><p id="acc
 document.body.appendChild(acc);
 
 var panel=document.createElement('div');panel.className='ov';
-panel.innerHTML='<div class="box"><h3 id="ptl">⚙️ Панель</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tV">Посетители</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
+panel.innerHTML='<div class="box"><h3 id="ptl">⚙️ Панель</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tU">👥 Зарегистрированные</button><button class="ab" id="tV">Посетители</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
 document.body.appendChild(panel);
 
 var mode='in';
@@ -623,25 +647,36 @@ function openAuth(m){setMode(m||'in');login.classList.add('on')}
 $('mIn').onclick=function(){setMode('in')};
 $('mUp').onclick=function(){setMode('up')};
 $('lcl').onclick=function(){login.classList.remove('on')};
+
 function authErr(e){
   var c=e.code||'';
   $('lerr').style.color='#ff6b6b';
   var m={
-    .auth/email-already-in-use':'Эта почта уже зарегистрирована, нажмите «Вход»',
-    .auth/weak-password':'Пароль слишком короткий (минимум 6 символов)',
-    .auth/invalid-email':'Неверный адрес почты',
-    .auth/too-many-requests':'Слишком много попыток, попробуйте позже',
-    .auth/network-request-failed':'Нет связи с сервером. Проверьте интернет, отключите VPN',
-    .auth/operation-not-allowed':'Вход по почте выключен в Firebase (Authentication → Sign-in method → Email/Password)',
-    .auth/admin-restricted-operation':'Регистрация новых пользователей выключена в Firebase (Authentication → Settings → User actions)',
-    .auth/unauthorized-domain':'Домен сайта не добавлен в Firebase (Authentication → Settings → Authorized domains)',
-    .auth/invalid-credential':'Неверная почта или пароль',
-    .auth/user-not-found':'Такой почты нет, нажмите «Регистрация»',
-    .auth/wrong-password':'Неверный пароль'
+    'auth/email-already-in-use':'Эта почта уже зарегистрирована, нажмите «Вход»',
+    'auth/weak-password':'Пароль слишком короткий (минимум 6 символов)',
+    'auth/invalid-email':'Неверный адрес почты',
+    'auth/missing-password':'Введите пароль',
+    'auth/too-many-requests':'Слишком много попыток, попробуйте позже',
+    'auth/network-request-failed':'Нет связи с сервером. Проверьте интернет, отключите VPN',
+    'auth/operation-not-allowed':'Вход по почте выключен в Firebase (Authentication → Sign-in method → Email/Password)',
+    'auth/admin-restricted-operation':'Регистрация выключена в Firebase (Authentication → Settings → User actions)',
+    'auth/unauthorized-domain':'Домен сайта не добавлен в Firebase (Authentication → Settings → Authorized domains)',
+    'auth/invalid-credential':'Неверная почта или пароль',
+    'auth/user-not-found':'Такой почты нет, нажмите «Регистрация»',
+    'auth/wrong-password':'Неверный пароль'
   };
-  $('lerr').textContent=(m[c]||'Ошибка: '+c+' '+(e.message||''));
+  $('lerr').textContent=m[c]||('Ошибка: '+c+' '+(e.message||''));
 }
+
+/* список зарегистрированных */
+function ensureUser(){
+  var u=auth.currentUser;if(!u)return Promise.resolve();
+  var ref=db.collection('users').doc(u.uid);
+  return ref.get().then(function(d){
+    if(!d.exists)return ref.set({name:(u.displayName||'Без имени').slice(0,60),email:u.email,t:TS()});
+  }).catch(function(e){console.error('users:',e.code,e.message)});
 }
+
 function afterLogin(){
   login.classList.remove('on');$('lpw').value='';
   applyUser();
@@ -655,6 +690,7 @@ $('lgo').onclick=function(){
     if(!nm){$('lerr').style.color='#ff6b6b';$('lerr').textContent='Введите имя';return}
     auth.createUserWithEmailAndPassword(em,pw)
       .then(function(c){return c.user.updateProfile({displayName:nm.slice(0,40)})})
+      .then(function(){return ensureUser()})
       .then(afterLogin).catch(authErr);
   }else{
     auth.signInWithEmailAndPassword(em,pw).then(afterLogin).catch(authErr);
@@ -692,7 +728,7 @@ function applyUser(){
   }
   updateUI();
 }
-auth.onAuthStateChanged(applyUser);
+auth.onAuthStateChanged(function(u){applyUser();if(u)setTimeout(ensureUser,2500)});
 setInterval(countPending,120000);
 
 hb.onclick=function(){
@@ -707,10 +743,11 @@ $('tC').onclick=function(){panel.classList.remove('on')};
 $('tX').onclick=function(){auth.signOut();panel.classList.remove('on')};
 $('tT').onclick=function(){panel.classList.remove('on');setEdit(true)};
 $('tR').onclick=function(){tab('R')};
+$('tU').onclick=function(){tab('U')};
 $('tV').onclick=function(){tab('V')};
 function tab(t){
-  $('tR').classList.toggle('on',t==='R');$('tV').classList.toggle('on',t==='V');
-  t==='R'?showRev():showVis();
+  ['R','U','V'].forEach(function(k){$('t'+k).classList.toggle('on',k===t)});
+  t==='R'?showRev():t==='U'?showUsers():showVis();
 }
 function openPanel(){flt='p';panel.classList.add('on');tab('R')}
 
@@ -765,14 +802,30 @@ function showRev(){
             if(!v){alert('Напишите текст ответа');return}
             ref.update({reply:v,replyRole:myRole,replyT:TS()}).then(function(){showRev();loadPub()}).catch(fail);
           }
-          if(a==='delreply')ref.update({reply:firebase.firestore.FieldValue.delete(),replyRole:firebase.firestore.FieldValue.delete(),replyT:firebase.firestore.FieldValue.delete()}).then(function(){showRev();loadPub()}).catch(fail);
+          if(a==='delreply')ref.update({reply:DEL(),replyRole:DEL(),replyT:DEL()}).then(function(){showRev();loadPub()}).catch(fail);
         };
       });
     });
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
 
-/* 6. Посетители (только владелец) */
+/* 6. Зарегистрированные (владелец и модератор) */
+function showUsers(){
+  $('pb').textContent='Загрузка…';
+  db.collection('users').orderBy('t','desc').get().then(function(s){
+    var h='<div class="stats"><div class="stat"><b>'+s.size+'</b>всего зарегистрировано</div></div>'+
+      '<div class="tw"><table class="vt"><tr><th>№</th><th>Имя</th><th>Почта</th><th>Дата регистрации</th></tr>';
+    var i=0;
+    s.forEach(function(d){
+      var x=d.data(),em=(x.email||'').toLowerCase();i++;
+      var tg=em===OWNER_EMAIL?' <span class="tag p">владелец</span>':(MODS.indexOf(em)>-1?' <span class="tag w">модератор</span>':'');
+      h+='<tr><td>'+i+'</td><td>'+esc(x.name)+tg+'</td><td>'+esc(x.email)+'</td><td>'+fmt(x.t)+'</td></tr>';
+    });
+    $('pb').innerHTML=h+'</table></div>';
+  }).catch(function(e){$('pb').textContent='Ошибка: '+(e.code||'')+' '+e.message});
+}
+
+/* 7. Посетители (только владелец) */
 function showVis(){
   $('pb').textContent='Загрузка…';
   db.collection('visits').orderBy('t','desc').limit(1000).get().then(function(s){
@@ -785,123 +838,6 @@ function showVis(){
     $('pb').innerHTML=h+'</table></div>';
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
-})();
-</script>
-  <style>
-/* Кнопка входа: на компьютере в одну строку, на телефоне в две, всегда видно «Войти / Регистрация» */
-.acbtn{line-height:1.15;flex-shrink:0}
-.acbtn .lf{display:inline}
-.acbtn .ls{display:none}
-@media(max-width:900px){
-  header{gap:8px}
-  .acbtn{height:44px;padding:4px 10px;font-size:12px;text-align:center}
-  .acbtn .lf{display:none}
-  .acbtn .ls{display:inline-block;white-space:pre-line;text-align:center}
-  .acbtn .ls::after{content:" /\A Регистрация"}
-  .right{gap:8px}
-  .cart{width:40px;height:40px;font-size:18px}
-  .burger{width:40px;height:40px}
-
-  /* окна входа, аккаунта и панели на телефоне */
-  .ov{padding:10px}
-  .box{padding:16px;margin:10px auto;border-radius:18px}
-  .box.sm{margin-top:6vh}
-  .box h3{font-size:19px}
-  .ab{padding:10px 12px;font-size:13px}
-  .arow{gap:6px}
-  .box input,.box textarea{font-size:16px}
-  .editbar{width:92%;flex-wrap:wrap;justify-content:center}
-}
-@media(max-width:380px){
-  .logo{font-size:13px}
-  .acbtn{padding:4px 8px;font-size:11px}
-}
-</style>
-  <script>
-(function(){
-  var OWNER='gornoemyasotop@gmail.com',MODS=['bidzievsaidmah777@gmail.com'];
-  var auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-  function $(id){return document.getElementById(id)}
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
-  function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
-  function mail(){var u=auth.currentUser;return u?(u.email||'').toLowerCase():''}
-  function isStaff(){var e=mail();return e===OWNER||MODS.indexOf(e)>-1}
-
-  /* записываем зарегистрированного в список (через 2 сек, чтобы успело сохраниться имя) */
-  function ensureUser(){
-    var u=auth.currentUser;if(!u)return;
-    var ref=db.collection('users').doc(u.uid);
-    ref.get().then(function(d){
-      if(!d.exists)return ref.set({name:(u.displayName||'Без имени').slice(0,60),email:u.email,t:TS()});
-    }).catch(function(){});
-  }
-
-  /* вкладка «Зарегистрированные» в панели */
-  function addTab(){
-    if($('tU')||!$('tR'))return;
-    var b=document.createElement('button');
-    b.className='ab';b.id='tU';b.textContent='👥 Зарегистрированные';
-    $('tR').insertAdjacentElement('afterend',b);
-    b.onclick=showUsers;
-    ['tR','tV'].forEach(function(id){var x=$(id);if(x)x.addEventListener('click',function(){b.classList.remove('on')})});
-  }
-  function showUsers(){
-    ['tR','tV'].forEach(function(id){var x=$(id);if(x)x.classList.remove('on')});
-    $('tU').classList.add('on');
-    $('pb').textContent='Загрузка…';
-    db.collection('users').orderBy('t','desc').get().then(function(s){
-      var h='<div class="stats"><div class="stat"><b>'+s.size+'</b>всего зарегистрировано</div></div>'+
-        '<div class="tw"><table class="vt"><tr><th>№</th><th>Имя</th><th>Почта</th><th>Дата регистрации</th></tr>';
-      var i=0;
-      s.forEach(function(d){
-        var x=d.data(),em=(x.email||'').toLowerCase();i++;
-        var tag=em===OWNER?' <span class="tag p">владелец</span>':(MODS.indexOf(em)>-1?' <span class="tag w">модератор</span>':'');
-        h+='<tr><td>'+i+'</td><td>'+esc(x.name)+tag+'</td><td>'+esc(x.email)+'</td><td>'+fmt(x.t)+'</td></tr>';
-      });
-      $('pb').innerHTML=h+'</table></div>';
-    }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
-  }
-
-  auth.onAuthStateChanged(function(u){
-    if(u)setTimeout(ensureUser,2000);
-    if(isStaff()){addTab();if($('tU'))$('tU').style.display=''}
-    else if($('tU'))$('tU').style.display='none';
-  });
-})();
-</script>
-  <style>
-.fixlogin{position:fixed;top:86px;right:20px;z-index:70;height:46px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:#e01b1b;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 22px rgba(224,27,27,.6)}
-@media(max-width:900px){.fixlogin{top:auto;right:auto;left:14px;bottom:16px;font-size:13px;padding:0 14px}}
-</style>
-<script>
-(function(){
-  var OWNER='gornoemyasotop@gmail.com',MODS=['bidzievsaidmah777@gmail.com'];
-  function visible(el){
-    if(!el)return false;
-    var r=el.getBoundingClientRect();
-    return r.width>0&&r.height>0&&r.right<=innerWidth+1&&r.left>=0;
-  }
-  setTimeout(function(){
-    if(visible(document.getElementById('acb')))return;
-    var b=document.createElement('button');
-    b.className='fixlogin';
-    b.textContent='👤 Войти / Регистрация';
-    b.onclick=function(){
-      var a=document.getElementById('acb');
-      if(a){a.click();return}
-      var l=document.getElementById('lem');
-      if(l&&l.closest('.ov')){l.closest('.ov').classList.add('on');return}
-      alert('Основной код входа не загрузился. Нажмите F12, откройте вкладку Console и пришлите красную строку.');
-    };
-    document.body.appendChild(b);
-    try{
-      firebase.auth().onAuthStateChanged(function(u){
-        if(!u){b.textContent='👤 Войти / Регистрация';return}
-        var e=(u.email||'').toLowerCase();
-        b.textContent=(e===OWNER||MODS.indexOf(e)>-1)?'⚙️ Панель':'👤 '+(u.displayName||'Аккаунт').slice(0,12);
-      });
-    }catch(e){}
-  },1500);
 })();
 </script>
 </body>
