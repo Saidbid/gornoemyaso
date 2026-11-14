@@ -451,13 +451,15 @@ body.lock{overflow:hidden}
   f.appendChild(d);
 })();
 </script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-.lockbtn{position:fixed;left:10px;bottom:10px;z-index:56;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.55);color:#fff;cursor:pointer;opacity:.5;font-size:18px}
-.lockbtn:hover,.lockbtn.has{opacity:1}
-.bdg{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e01b1b;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(224,27,27,.9)}
+.acbtn{position:relative;height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.25s}
+.acbtn:hover{background:#e01b1b;border-color:#e01b1b}
+.acbtn .ls{display:none}
+@media(max-width:900px){.acbtn{padding:0 12px;font-size:13px}.acbtn .lf{display:none}.acbtn .ls{display:inline}}
+.bdg{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e01b1b;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(224,27,27,.9)}
 .ov{position:fixed;inset:0;z-index:100;background:rgba(5,5,8,.94);backdrop-filter:blur(10px);overflow:auto;display:none;padding:20px}
 .ov.on{display:block}
 .box{max-width:960px;margin:20px auto;background:#13131a;border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:24px;color:#fff}
@@ -489,7 +491,8 @@ body.lock{overflow:hidden}
 </style>
 <script>
 (function(){
-var OWNER_EMAIL='bidzievsaidmah777@gmail.com';
+var OWNER_EMAIL='gornoemyasotop@gmail.com';
+var MODS=['bidzievsaidmah777@gmail.com'];
 var firebaseConfig={
   apiKey:"AIzaSyDKrW8Ci0SfwshTSgolWZnhSQWsuBcP_68",
   authDomain:"gornoemyaso.firebaseapp.com",
@@ -504,9 +507,11 @@ function $(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
 function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
 function fail(e){alert('Ошибка: '+(e.code||'')+' — '+e.message)}
+function whoLabel(r){return r==='mod'?'модератора':r==='owner'?'владельца':'магазина'}
+function whoName(r){return r==='mod'?'модератор':r==='owner'?'владелец':'—'}
 var vid=localStorage.getItem('vid');
 if(!vid){vid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('vid',vid)}
-var role=null,flt='p';
+var role=null,flt='p',pend=0;
 
 /* 1. Учёт заходов */
 if(!sessionStorage.getItem('counted')){
@@ -517,14 +522,14 @@ if(!sessionStorage.getItem('counted')){
   db.collection('visits').add({t:TS(),vid:vid,device:dev,src:src}).catch(function(){});
 }
 
-/* 2. Публичные отзывы */
+/* 2. Публичные отзывы с подписью, кто ответил */
 function loadPub(){
   db.collection('reviews').where('approved','==',true).get().then(function(s){
     var a=[];s.forEach(function(d){a.push(d.data())});
     a.sort(function(x,y){return (y.t&&y.t.seconds||0)-(x.t&&x.t.seconds||0)});
     $('reviews').innerHTML=a.map(function(r){
       return '<div class="r"><b>'+esc(r.name)+'</b><p>'+esc(r.text)+'</p>'+
-        (r.reply?'<div class="reply"><b>💬 Ответ магазина «Горное мясо»</b><p>'+esc(r.reply)+'</p></div>':'')+'</div>';
+        (r.reply?'<div class="reply"><b>💬 Ответ '+whoLabel(r.replyRole)+'</b><p>'+esc(r.reply)+'</p></div>':'')+'</div>';
     }).join('')||'<p style="color:#a0a0ab;text-align:center">Пока нет отзывов. Будьте первым!</p>';
   }).catch(function(){});
 }
@@ -565,9 +570,28 @@ $('svT').onclick=function(){
 };
 $('cnT').onclick=function(){location.reload()};
 
-/* 4. Аккаунты: вход и регистрация */
-var lb=document.createElement('button');lb.className='lockbtn';lb.textContent='👤';lb.setAttribute('aria-label','Аккаунт');document.body.appendChild(lb);
+/* 4. Кнопка аккаунта в шапке справа вверху */
+var hb=document.createElement('button');hb.className='acbtn';hb.id='acb';hb.setAttribute('aria-label','Аккаунт');
+var hright=document.querySelector('header .right');
+if(hright)hright.insertBefore(hb,hright.firstChild);else{hb.style.cssText='position:fixed;top:14px;right:14px;z-index:60';document.body.appendChild(hb)}
+function renderHB(){
+  var u=auth.currentUser,staff=role==='owner'||role==='mod',t;
+  if(!u)t='<span class="lf">👤 Войти / Регистрация</span><span class="ls">👤 Войти</span>';
+  else if(staff)t='⚙️ Панель';
+  else t='👤 '+esc((u.displayName||'Аккаунт').slice(0,12));
+  hb.innerHTML=t+(pend&&staff?'<span class="bdg">'+pend+'</span>':'');
+}
+function setBadge(n){pend=n;renderHB()}
+renderHB();
 
+var mm=document.querySelector('.mmenu');
+if(mm){
+  var ma=document.createElement('a');ma.href='#';ma.textContent='👤 Аккаунт';
+  ma.onclick=function(e){e.preventDefault();mm.classList.remove('open');document.body.classList.remove('lock');var bu=document.querySelector('.burger');if(bu)bu.classList.remove('open');hb.click()};
+  mm.insertBefore(ma,mm.querySelector('small'));
+}
+
+/* окна: вход/регистрация, аккаунт, панель */
 var login=document.createElement('div');login.className='ov';
 login.innerHTML='<div class="box sm"><h3 id="atl">Вход</h3>'+
  '<div class="arow"><button class="ab on" id="mIn">Вход</button><button class="ab" id="mUp">Регистрация</button></div>'+
@@ -583,7 +607,7 @@ acc.innerHTML='<div class="box sm"><h3>👤 Ваш аккаунт</h3><p id="acc
 document.body.appendChild(acc);
 
 var panel=document.createElement('div');panel.className='ov';
-panel.innerHTML='<div class="box"><h3>⚙️ Панель</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tV">Посетители</button><button class="ab" id="tM">🛡 Модераторы</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
+panel.innerHTML='<div class="box"><h3 id="ptl">⚙️ Панель</h3><div class="arow"><button class="ab on" id="tR">Отзывы</button><button class="ab" id="tV">Посетители</button><button class="ab red" id="tT">✏️ Править тексты</button><button class="ab" id="tX">Выйти</button><button class="ab" id="tC">✕ Закрыть</button></div><div id="pb"></div></div>';
 document.body.appendChild(panel);
 
 var mode='in';
@@ -601,6 +625,7 @@ $('mUp').onclick=function(){setMode('up')};
 $('lcl').onclick=function(){login.classList.remove('on')};
 function authErr(e){
   var c=e.code||'';
+  $('lerr').style.color='#ff6b6b';
   $('lerr').textContent=
     c==='auth/email-already-in-use'?'Эта почта уже зарегистрирована, нажмите «Вход»':
     c==='auth/weak-password'?'Пароль слишком короткий (минимум 6 символов)':
@@ -610,14 +635,15 @@ function authErr(e){
 }
 function afterLogin(){
   login.classList.remove('on');$('lpw').value='';
-  applyUser(function(){if(role==='owner'||role==='mod')openPanel()});
+  applyUser();
+  if(role==='owner'||role==='mod')openPanel();
 }
 $('lgo').onclick=function(){
   $('lerr').textContent='';
   var em=$('lem').value.trim(),pw=$('lpw').value;
   if(mode==='up'){
     var nm=$('anm2').value.trim();
-    if(!nm){$('lerr').textContent='Введите имя';return}
+    if(!nm){$('lerr').style.color='#ff6b6b';$('lerr').textContent='Введите имя';return}
     auth.createUserWithEmailAndPassword(em,pw)
       .then(function(c){return c.user.updateProfile({displayName:nm.slice(0,40)})})
       .then(afterLogin).catch(authErr);
@@ -627,38 +653,40 @@ $('lgo').onclick=function(){
 };
 $('lfp').onclick=function(){
   var em=$('lem').value.trim();
-  if(!em){$('lerr').textContent='Впишите почту и нажмите «Забыли пароль?»';return}
-  auth.sendPasswordResetEmail(em).then(function(){$('lerr').style.color='#7dff9a';$('lerr').textContent='Письмо для смены пароля отправлено';setTimeout(function(){$('lerr').style.color='#ff6b6b'},4000)}).catch(authErr);
+  if(!em){$('lerr').style.color='#ff6b6b';$('lerr').textContent='Впишите почту и нажмите «Забыли пароль?»';return}
+  auth.sendPasswordResetEmail(em).then(function(){$('lerr').style.color='#7dff9a';$('lerr').textContent='Письмо для смены пароля отправлено'}).catch(authErr);
 };
 
-/* роль и интерфейс */
-function setBadge(n){lb.innerHTML='👤'+(n?'<span class="bdg">'+n+'</span>':'');lb.classList.toggle('has',n>0)}
+/* роли */
 function countPending(){
   if(role!=='owner'&&role!=='mod'){setBadge(0);return}
   db.collection('reviews').where('approved','==',false).get().then(function(s){setBadge(s.size)}).catch(function(){});
 }
 function updateUI(){
   var u=auth.currentUser,own=role==='owner';
-  ['tV','tM','tT'].forEach(function(id){$(id).style.display=own?'':'none'});
+  $('tV').style.display=own?'':'none';
+  $('tT').style.display=own?'':'none';
+  $('ptl').textContent=own?'⚙️ Панель владельца':'🛡 Панель модератора';
   if(rform){
     rform.style.display=u?'':'none';
     note.style.display=u?'none':'';
     if(u&&$('rn')){$('rn').value=u.displayName||'Покупатель';$('rn').readOnly=true}
   }
+  renderHB();
   countPending();
 }
-function applyUser(cb){
+function applyUser(){
   var u=auth.currentUser;role=null;
-  if(!u){updateUI();if(cb)cb();return}
-  var em=(u.email||'').toLowerCase();
-  if(em===OWNER_EMAIL){role='owner';updateUI();if(cb)cb();return}
-  role='user';
-  db.collection('staff').doc(em).get().then(function(d){if(d.exists)role='mod'}).catch(function(){}).then(function(){updateUI();if(cb)cb()});
+  if(u){
+    var em=(u.email||'').toLowerCase();
+    role=em===OWNER_EMAIL?'owner':(MODS.indexOf(em)>-1?'mod':'user');
+  }
+  updateUI();
 }
-auth.onAuthStateChanged(function(){applyUser()});
+auth.onAuthStateChanged(applyUser);
 setInterval(countPending,120000);
 
-lb.onclick=function(){
+hb.onclick=function(){
   var u=auth.currentUser;
   if(!u){openAuth('in');return}
   if(role==='owner'||role==='mod')openPanel();
@@ -671,17 +699,16 @@ $('tX').onclick=function(){auth.signOut();panel.classList.remove('on')};
 $('tT').onclick=function(){panel.classList.remove('on');setEdit(true)};
 $('tR').onclick=function(){tab('R')};
 $('tV').onclick=function(){tab('V')};
-$('tM').onclick=function(){tab('M')};
 function tab(t){
-  ['R','V','M'].forEach(function(k){$('t'+k).classList.toggle('on',k===t)});
-  t==='R'?showRev():t==='V'?showVis():showMods();
+  $('tR').classList.toggle('on',t==='R');$('tV').classList.toggle('on',t==='V');
+  t==='R'?showRev():showVis();
 }
 function openPanel(){flt='p';panel.classList.add('on');tab('R')}
 
-/* 5. Отзывы в панели */
+/* 5. Отзывы в панели: владелец и модератор */
 function showRev(){
   $('pb').textContent='Загрузка…';
-  var own=role==='owner';
+  var own=role==='owner',myRole=own?'owner':'mod';
   Promise.all([
     own?db.collection('visits').orderBy('t','desc').limit(1000).get():Promise.resolve(null),
     db.collection('reviews').orderBy('t','desc').get()
@@ -699,12 +726,13 @@ function showRev(){
     if(!shown.length)h+='<p style="color:#a0a0ab;padding:10px 0">Здесь пока пусто</p>';
     shown.forEach(function(i){
       var x=i.x;
-      h+='<div class="rv'+(x.approved?'':' pend')+'" data-id="'+i.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small>'
+      h+='<div class="rv'+(x.approved?'':' pend')+'" data-id="'+i.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid&&own?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small>'
       +'<textarea class="txt" rows="3"'+(own?'':' readonly')+'>'+esc(x.text)+'</textarea>'
-      +(own?'<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(x.reply||'')+'</textarea>':(x.reply?'<small>💬 Ответ владельца: '+esc(x.reply)+'</small>':''))
+      +(x.reply?'<small>💬 Сейчас отвечает: '+whoName(x.replyRole)+'</small>':'')
+      +'<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем, подпись: '+whoName(myRole)+')">'+esc(x.reply||'')+'</textarea>'
       +'<div class="arow">'
-      +(own?'<button class="ab grn" data-a="reply">'+(x.reply?'Обновить ответ':'💬 Ответить')+'</button>':'')
-      +(own&&x.reply?'<button class="ab" data-a="delreply">Убрать ответ</button>':'')
+      +'<button class="ab grn" data-a="reply">'+(x.reply?'Обновить ответ':'💬 Ответить')+'</button>'
+      +(x.reply?'<button class="ab" data-a="delreply">Убрать ответ</button>':'')
       +'<button class="ab '+(x.approved?'':'grn')+'" data-a="pub">'+(x.approved?'Скрыть':'Опубликовать')+'</button>'
       +(own?'<button class="ab" data-a="save">Сохранить текст</button>':'')
       +'<button class="ab red" data-a="del">Удалить</button></div></div>';
@@ -726,16 +754,16 @@ function showRev(){
           if(a==='reply'){
             var v=card.querySelector('.rpl').value.trim();
             if(!v){alert('Напишите текст ответа');return}
-            ref.update({reply:v,replyT:TS()}).then(function(){showRev();loadPub()}).catch(fail);
+            ref.update({reply:v,replyRole:myRole,replyT:TS()}).then(function(){showRev();loadPub()}).catch(fail);
           }
-          if(a==='delreply')ref.update({reply:firebase.firestore.FieldValue.delete()}).then(function(){showRev();loadPub()}).catch(fail);
+          if(a==='delreply')ref.update({reply:firebase.firestore.FieldValue.delete(),replyRole:firebase.firestore.FieldValue.delete(),replyT:firebase.firestore.FieldValue.delete()}).then(function(){showRev();loadPub()}).catch(fail);
         };
       });
     });
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
 
-/* 6. Посетители (владелец) */
+/* 6. Посетители (только владелец) */
 function showVis(){
   $('pb').textContent='Загрузка…';
   db.collection('visits').orderBy('t','desc').limit(1000).get().then(function(s){
@@ -746,29 +774,6 @@ function showVis(){
     h+='<div class="tw"><table class="vt"><tr><th>Время</th><th>Посетитель</th><th>Устройство</th><th>Откуда</th></tr>';
     a.slice(0,100).forEach(function(v){h+='<tr><td>'+fmt(v.t)+'</td><td>#'+esc((v.vid||'').slice(0,6))+'</td><td>'+esc(v.device)+'</td><td>'+esc(v.src)+'</td></tr>'});
     $('pb').innerHTML=h+'</table></div>';
-  }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
-}
-
-/* 7. Модераторы (владелец) */
-function showMods(){
-  $('pb').textContent='Загрузка…';
-  db.collection('staff').get().then(function(s){
-    var h='<div class="rv"><b>🛡 Назначить модератора</b><input id="mem" type="email" placeholder="Почта модератора (он должен зарегистрироваться на сайте с этой почтой)"><button class="ab grn" id="mad">Назначить</button></div>';
-    var n=0;
-    s.forEach(function(d){n++;h+='<div class="rv"><b>'+esc(d.id)+'</b><span class="tag p">модератор</span><div class="arow" style="margin:10px 0 0"><button class="ab red" data-m="'+esc(d.id)+'">Снять</button></div></div>'});
-    if(!n)h+='<p style="color:#a0a0ab">Модераторов пока нет</p>';
-    $('pb').innerHTML=h;
-    $('mad').onclick=function(){
-      var em=$('mem').value.trim().toLowerCase();
-      if(!em)return;
-      db.collection('staff').doc(em).set({role:'moderator',t:TS()}).then(showMods).catch(fail);
-    };
-    $('pb').querySelectorAll('[data-m]').forEach(function(b){
-      b.onclick=function(){
-        if(confirm('Снять модератора '+b.getAttribute('data-m')+'?'))
-          db.collection('staff').doc(b.getAttribute('data-m')).delete().then(showMods).catch(fail);
-      };
-    });
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
 })();
