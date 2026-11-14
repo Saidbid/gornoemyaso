@@ -778,5 +778,35 @@ function showVis(){
 }
 })();
 </script>
+  <style>
+/* Кнопка входа: на компьютере в одну строку, на телефоне в две, всегда видно «Войти / Регистрация» */
+.acbtn{line-height:1.15;flex-shrink:0}
+.acbtn .lf{display:inline}
+.acbtn .ls{display:none}
+@media(max-width:900px){
+  header{gap:8px}
+  .acbtn{height:44px;padding:4px 10px;font-size:12px;text-align:center}
+  .acbtn .lf{display:none}
+  .acbtn .ls{display:inline-block;white-space:pre-line;text-align:center}
+  .acbtn .ls::after{content:" /\A Регистрация"}
+  .right{gap:8px}
+  .cart{width:40px;height:40px;font-size:18px}
+  .burger{width:40px;height:40px}
+
+  /* окна входа, аккаунта и панели на телефоне */
+  .ov{padding:10px}
+  .box{padding:16px;margin:10px auto;border-radius:18px}
+  .box.sm{margin-top:6vh}
+  .box h3{font-size:19px}
+  .ab{padding:10px 12px;font-size:13px}
+  .arow{gap:6px}
+  .box input,.box textarea{font-size:16px}
+  .editbar{width:92%;flex-wrap:wrap;justify-content:center}
+}
+@media(max-width:380px){
+  .logo{font-size:13px}
+  .acbtn{padding:4px 8px;font-size:11px}
+}
+</style>
 </body>
 </html>
