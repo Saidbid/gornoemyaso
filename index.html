@@ -617,5 +617,66 @@ function showVis(){
 }
 })();
 </script>
+  <style>
+.r .reply{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(224,27,27,.1);border-left:3px solid #e01b1b}
+.r .reply b{color:#ff5a5a;font-size:14px}
+.r .reply p{margin-top:4px}
+.rpl{border-color:#e01b1b !important}
+.rarow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+</style>
+<script>
+(function(){
+  var db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
+
+  /* ===== 1. Сайт: отзывы вместе с ответами ===== */
+  var box=document.getElementById('reviews');
+  function renderPub(){
+    db.collection('reviews').where('approved','==',true).get().then(function(s){
+      var a=[];s.forEach(function(d){a.push(d.data())});
+      a.sort(function(x,y){return (y.t&&y.t.seconds||0)-(x.t&&x.t.seconds||0)});
+      box.innerHTML='<i data-mine style="display:none"></i>'+(a.map(function(r){
+        return '<div class="r"><b>'+esc(r.name)+'</b><p>'+esc(r.text)+'</p>'+
+          (r.reply?'<div class="reply"><b>💬 Ответ магазина «Горное мясо»</b><p>'+esc(r.reply)+'</p></div>':'')+'</div>';
+      }).join('')||'<p style="color:#a0a0ab;text-align:center">Пока нет отзывов. Будьте первым!</p>');
+    }).catch(function(){});
+  }
+  if(box){
+    new MutationObserver(function(){ if(!box.querySelector('[data-mine]'))renderPub(); }).observe(box,{childList:true});
+    renderPub();
+  }
+
+  /* ===== 2. Панель владельца: поле и кнопка «Ответить» ===== */
+  var pb=document.getElementById('pb');
+  function addReply(card){
+    if(card.getAttribute('data-rp')||card.querySelector('.rpl'))return;
+    card.setAttribute('data-rp','1');
+    var id=card.getAttribute('data-id'),ref=db.collection('reviews').doc(id);
+    ref.get().then(function(d){
+      var cur=(d.exists&&d.data().reply)||'';
+      var wrap=document.createElement('div');
+      wrap.innerHTML='<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(cur)+'</textarea>'+
+        '<div class="rarow"><button class="ab grn" data-r="go">'+(cur?'Обновить ответ':'Ответить')+'</button>'+(cur?'<button class="ab" data-r="del">Убрать ответ</button>':'')+'</div>';
+      var row=card.querySelector('.arow');
+      row.parentNode.insertBefore(wrap,row);
+      function fail(e){alert('Ошибка: '+e.code+' — '+e.message)}
+      function done(btn,t){btn.textContent=t;var m=box&&box.querySelector('[data-mine]');if(m)m.remove()}
+      wrap.querySelector('[data-r="go"]').onclick=function(){
+        var b=this,v=wrap.querySelector('.rpl').value.trim();
+        if(!v){alert('Напишите текст ответа');return}
+        ref.update({reply:v,replyT:TS()}).then(function(){done(b,'✔ Ответ опубликован')}).catch(fail);
+      };
+      var dl=wrap.querySelector('[data-r="del"]');
+      if(dl)dl.onclick=function(){
+        var b=this;
+        ref.update({reply:firebase.firestore.FieldValue.delete()}).then(function(){wrap.querySelector('.rpl').value='';done(b,'✔ Ответ убран')}).catch(fail);
+      };
+    }).catch(function(){});
+  }
+  if(pb)new MutationObserver(function(){
+    pb.querySelectorAll('.rv[data-id]').forEach(addReply);
+  }).observe(pb,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
