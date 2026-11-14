@@ -468,6 +468,7 @@ body.lock{overflow:hidden}
 .rv{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;margin-bottom:12px}
 .rv small{color:#a0a0ab;display:block;margin-bottom:8px}
 .box input,.box textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #333;background:#0c0c11;color:#fff;font-family:inherit;font-size:15px;margin-bottom:8px}
+.box textarea.rpl{border-color:#e01b1b}
 .tag{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:6px}
 .tag.w{background:#8a5a00}.tag.p{background:#1f9d3f}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
@@ -479,10 +480,12 @@ body.lock{overflow:hidden}
 .editbar.on{display:flex}
 .editing [data-ed]{outline:2px dashed #e01b1b;outline-offset:3px;cursor:text}
 .rmsg{color:#7dff9a;margin-top:8px}
+.r .reply{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(224,27,27,.1);border-left:3px solid #e01b1b}
+.r .reply b{color:#ff5a5a;font-size:14px}
+.r .reply p{margin-top:4px}
 </style>
 <script>
 (function(){
-/* ===== ВСТАВЬ СВОИ ДАННЫЕ ИЗ FIREBASE ===== */
 var OWNER_EMAIL='bidzievsaidmah777@gmail.com';
 var firebaseConfig={
   apiKey:"AIzaSyDKrW8Ci0SfwshTSgolWZnhSQWsuBcP_68",
@@ -492,12 +495,12 @@ var firebaseConfig={
   messagingSenderId:"356939305134",
   appId:"1:356939305134:web:0c0a6e586c1ee1030b1d3f"
 };
-/* ========================================= */
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth(),TS=firebase.firestore.FieldValue.serverTimestamp;
 function $(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
 function fmt(t){return t&&t.toDate?t.toDate().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
+function fail(e){alert('Ошибка: '+(e.code||'')+' — '+e.message)}
 var vid=localStorage.getItem('vid');
 if(!vid){vid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('vid',vid)}
 
@@ -510,7 +513,7 @@ if(!sessionStorage.getItem('counted')){
   db.collection('visits').add({t:TS(),vid:vid,device:dev,src:src}).catch(function(){});
 }
 
-/* 2. Публичные отзывы */
+/* 2. Публичные отзывы (с ответами владельца) */
 if($('rn')&&!$('rc')){
   var rc=document.createElement('input');rc.id='rc';rc.maxLength=60;
   rc.placeholder='Телефон или @ник (необязательно, видит только владелец)';
@@ -520,7 +523,10 @@ function loadPub(){
   db.collection('reviews').where('approved','==',true).get().then(function(s){
     var a=[];s.forEach(function(d){a.push(d.data())});
     a.sort(function(x,y){return (y.t&&y.t.seconds||0)-(x.t&&x.t.seconds||0)});
-    $('reviews').innerHTML=a.map(function(r){return '<div class="r"><b>'+esc(r.name)+'</b><p>'+esc(r.text)+'</p></div>'}).join('')||'<p style="color:#a0a0ab;text-align:center">Пока нет отзывов. Будьте первым!</p>';
+    $('reviews').innerHTML=a.map(function(r){
+      return '<div class="r"><b>'+esc(r.name)+'</b><p>'+esc(r.text)+'</p>'+
+        (r.reply?'<div class="reply"><b>💬 Ответ магазина «Горное мясо»</b><p>'+esc(r.reply)+'</p></div>':'')+'</div>';
+    }).join('')||'<p style="color:#a0a0ab;text-align:center">Пока нет отзывов. Будьте первым!</p>';
   }).catch(function(){});
 }
 loadPub();
@@ -548,7 +554,7 @@ function setEdit(on){
 $('svT').onclick=function(){
   var m={};
   eds.forEach(function(el){var t=el.textContent.trim();m[el.getAttribute('data-ed')]=(t!==el._o)?t:firebase.firestore.FieldValue.delete()});
-  db.collection('content').doc('texts').set(m,{merge:true}).then(function(){setEdit(false);alert('Тексты сохранены')}).catch(function(e){alert('Ошибка: '+e.message)});
+  db.collection('content').doc('texts').set(m,{merge:true}).then(function(){setEdit(false);alert('Тексты сохранены')}).catch(fail);
 };
 $('cnT').onclick=function(){location.reload()};
 
@@ -583,21 +589,35 @@ function showRev(){
     var h='<div class="rv"><b>➕ Добавить отзыв вручную</b><input id="anm" placeholder="Имя"><textarea id="atx" rows="2" placeholder="Текст отзыва"></textarea><button class="ab grn" id="aad">Добавить и опубликовать</button></div>';
     r[1].forEach(function(d){
       var x=d.data();
-      h+='<div class="rv" data-id="'+d.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small><textarea rows="3">'+esc(x.text)+'</textarea><div class="arow"><button class="ab '+(x.approved?'':'grn')+'" data-a="pub">'+(x.approved?'Скрыть':'Опубликовать')+'</button><button class="ab" data-a="save">Сохранить текст</button><button class="ab red" data-a="del">Удалить</button></div></div>';
+      h+='<div class="rv" data-id="'+d.id+'"><small><b>'+esc(x.name)+'</b>'+(x.approved?'<span class="tag p">опубликован</span>':'<span class="tag w">ждёт проверки</span>')+'<br>'+fmt(x.t)+(x.contact?' · контакт: '+esc(x.contact):'')+(x.vid?' · заходов на сайт: '+(vc[x.vid]||0):'')+'</small>'
+      +'<textarea class="txt" rows="3">'+esc(x.text)+'</textarea>'
+      +'<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(x.reply||'')+'</textarea>'
+      +'<div class="arow">'
+      +'<button class="ab grn" data-a="reply">'+(x.reply?'Обновить ответ':'💬 Ответить')+'</button>'
+      +(x.reply?'<button class="ab" data-a="delreply">Убрать ответ</button>':'')
+      +'<button class="ab '+(x.approved?'':'grn')+'" data-a="pub">'+(x.approved?'Скрыть':'Опубликовать')+'</button>'
+      +'<button class="ab" data-a="save">Сохранить текст</button>'
+      +'<button class="ab red" data-a="del">Удалить</button></div></div>';
     });
     $('pb').innerHTML=h;
     $('aad').onclick=function(){
       if(!$('atx').value.trim())return;
-      db.collection('reviews').add({name:$('anm').value.trim()||'Покупатель',text:$('atx').value.trim(),approved:true,t:TS()}).then(function(){showRev();loadPub()});
+      db.collection('reviews').add({name:$('anm').value.trim()||'Покупатель',text:$('atx').value.trim(),approved:true,t:TS()}).then(function(){showRev();loadPub()}).catch(fail);
     };
     $('pb').querySelectorAll('.rv[data-id]').forEach(function(card){
       var ref=db.collection('reviews').doc(card.getAttribute('data-id'));
       card.querySelectorAll('[data-a]').forEach(function(b){
         b.onclick=function(){
           var a=b.getAttribute('data-a');
-          if(a==='pub')ref.update({approved:b.textContent.trim()==='Опубликовать'}).then(function(){showRev();loadPub()});
-          if(a==='save')ref.update({text:card.querySelector('textarea').value}).then(function(){b.textContent='✔ Сохранено';loadPub()});
-          if(a==='del'&&confirm('Удалить отзыв насовсем?'))ref.delete().then(function(){showRev();loadPub()});
+          if(a==='pub')ref.update({approved:b.textContent.trim()==='Опубликовать'}).then(function(){showRev();loadPub()}).catch(fail);
+          if(a==='save')ref.update({text:card.querySelector('.txt').value}).then(function(){b.textContent='✔ Сохранено';loadPub()}).catch(fail);
+          if(a==='del'&&confirm('Удалить отзыв насовсем?'))ref.delete().then(function(){showRev();loadPub()}).catch(fail);
+          if(a==='reply'){
+            var v=card.querySelector('.rpl').value.trim();
+            if(!v){alert('Напишите текст ответа');return}
+            ref.update({reply:v,replyT:TS()}).then(function(){showRev();loadPub()}).catch(fail);
+          }
+          if(a==='delreply')ref.update({reply:firebase.firestore.FieldValue.delete()}).then(function(){showRev();loadPub()}).catch(fail);
         };
       });
     });
@@ -615,67 +635,6 @@ function showVis(){
     $('pb').innerHTML=h+'</table></div>';
   }).catch(function(e){$('pb').textContent='Ошибка: '+e.message});
 }
-})();
-</script>
-  <style>
-.r .reply{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(224,27,27,.1);border-left:3px solid #e01b1b}
-.r .reply b{color:#ff5a5a;font-size:14px}
-.r .reply p{margin-top:4px}
-.rpl{border-color:#e01b1b !important}
-.rarow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-</style>
-<script>
-(function(){
-  var db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]})}
-
-  /* ===== 1. Сайт: отзывы вместе с ответами ===== */
-  var box=document.getElementById('reviews');
-  function renderPub(){
-    db.collection('reviews').where('approved','==',true).get().then(function(s){
-      var a=[];s.forEach(function(d){a.push(d.data())});
-      a.sort(function(x,y){return (y.t&&y.t.seconds||0)-(x.t&&x.t.seconds||0)});
-      box.innerHTML='<i data-mine style="display:none"></i>'+(a.map(function(r){
-        return '<div class="r"><b>'+esc(r.name)+'</b><p>'+esc(r.text)+'</p>'+
-          (r.reply?'<div class="reply"><b>💬 Ответ магазина «Горное мясо»</b><p>'+esc(r.reply)+'</p></div>':'')+'</div>';
-      }).join('')||'<p style="color:#a0a0ab;text-align:center">Пока нет отзывов. Будьте первым!</p>');
-    }).catch(function(){});
-  }
-  if(box){
-    new MutationObserver(function(){ if(!box.querySelector('[data-mine]'))renderPub(); }).observe(box,{childList:true});
-    renderPub();
-  }
-
-  /* ===== 2. Панель владельца: поле и кнопка «Ответить» ===== */
-  var pb=document.getElementById('pb');
-  function addReply(card){
-    if(card.getAttribute('data-rp')||card.querySelector('.rpl'))return;
-    card.setAttribute('data-rp','1');
-    var id=card.getAttribute('data-id'),ref=db.collection('reviews').doc(id);
-    ref.get().then(function(d){
-      var cur=(d.exists&&d.data().reply)||'';
-      var wrap=document.createElement('div');
-      wrap.innerHTML='<textarea class="rpl" rows="2" placeholder="Ваш ответ на отзыв (виден всем на сайте)">'+esc(cur)+'</textarea>'+
-        '<div class="rarow"><button class="ab grn" data-r="go">'+(cur?'Обновить ответ':'Ответить')+'</button>'+(cur?'<button class="ab" data-r="del">Убрать ответ</button>':'')+'</div>';
-      var row=card.querySelector('.arow');
-      row.parentNode.insertBefore(wrap,row);
-      function fail(e){alert('Ошибка: '+e.code+' — '+e.message)}
-      function done(btn,t){btn.textContent=t;var m=box&&box.querySelector('[data-mine]');if(m)m.remove()}
-      wrap.querySelector('[data-r="go"]').onclick=function(){
-        var b=this,v=wrap.querySelector('.rpl').value.trim();
-        if(!v){alert('Напишите текст ответа');return}
-        ref.update({reply:v,replyT:TS()}).then(function(){done(b,'✔ Ответ опубликован')}).catch(fail);
-      };
-      var dl=wrap.querySelector('[data-r="del"]');
-      if(dl)dl.onclick=function(){
-        var b=this;
-        ref.update({reply:firebase.firestore.FieldValue.delete()}).then(function(){wrap.querySelector('.rpl').value='';done(b,'✔ Ответ убран')}).catch(fail);
-      };
-    }).catch(function(){});
-  }
-  if(pb)new MutationObserver(function(){
-    pb.querySelectorAll('.rv[data-id]').forEach(addReply);
-  }).observe(pb,{childList:true,subtree:true});
 })();
 </script>
 </body>
